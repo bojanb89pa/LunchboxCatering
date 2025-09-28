@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lunchbox Catering</title>
+    <!-- Učitavanje Tailwind CSS-a -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Postavljanje Fonta Inter -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Soft Light Gray Background */
+        }
+        /* Prilagođeni stilovi za lepotu i responzivnost */
+        .card-shadow {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Loader dok se podaci učitavaju -->
+    <div id="mainLoader" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
+        <svg class="animate-spin h-10 w-10 text-emerald-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p class="text-gray-600 font-semibold">Učitavanje menija i linkova za naručivanje...</p>
+    </div>
+    
+    <!-- Poruka o grešci pri učitavanju podataka -->
+    <div id="fetchError" class="hidden text-center max-w-lg p-6 bg-red-100 border border-red-400 text-red-700 rounded-xl mx-auto my-4">
+        <p class="font-bold">Greška pri učitavanju podataka</p>
+        <p class="text-sm mt-1">Nismo uspeli da preuzmemo linkove sa Google Sheeta. Proverite da li je **SHEET_ID** ispravan i da li je Sheet **JAVAN (Public read-only)**.</p>
+    </div>
+
+    <!-- Glavni Kontejner (Sadržaj) - Skriven dok se podaci ne učitaju -->
+    <div id="mainContent" class="w-full max-w-lg bg-white rounded-xl p-8 md:p-10 card-shadow border border-gray-100 hidden">
+
+        <!-- Logo i Naslov -->
+        <header class="text-center mb-10">
+            <div class="text-6xl mb-3 text-emerald-600">🍱</div>
+            <h1 class="text-4xl font-extrabold text-gray-800">Lunchbox Catering</h1>
+            <p class="text-sm text-gray-500 mt-2">Kvalitetan i svež obrok, dostavljen na vreme.</p>
+            <hr class="mt-6 border-emerald-100">
+        </header>
+
+        <!-- Opis Firme -->
+        <section class="mb-10 text-center">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Svežina, ukus i praktičnost</h2>
+            <p class="text-gray-600 leading-relaxed">
+                Specijalizovani smo za dnevnu dostavu obroka, pružajući kompanijama i pojedincima ukusnu, domaću hranu. 
+                Naša ponuda se menja svakodnevno kako bi vaša pauza za ručak bila zanimljiva i zdrava, bez stresa oko kuvanja. 
+                Jednostavno naručite preko Google forme i mi se brinemo za ostalo!
+            </p>
+        </section>
+
+        <!-- Glavna Akcija - Dugme za Naručivanje -->
+        <div class="text-center mb-8">
+            <button id="orderButton" class="w-full py-4 px-6 text-xl font-bold bg-amber-500 text-white rounded-lg transition duration-300 ease-in-out hover:bg-amber-600 focus:outline-none focus:ring-4 focus:ring-amber-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                    onclick="window.location.href = document.getElementById('orderButton').dataset.link;">
+                NARUČI ZA DANAS
+            </button>
+            <p id="orderDeadline" class="text-xs text-gray-500 mt-2">Dostupno za naručivanje do 13:00 h.</p>
+        </div>
+
+        <!-- Meni Sekcija -->
+        <section class="text-center">
+            <button id="menuButton" class="w-full py-3 px-6 text-base font-semibold border border-emerald-500 text-emerald-600 rounded-lg transition duration-300 ease-in-out hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                    onclick="showMenuModal()">
+                POGLEDAJ DANAŠNJI / NAREDNI MENI
+            </button>
+        </section>
+    </div>
+
+    <!-- Modal za Prikaz Menija (Google Sheet Link / Slika) -->
+    <div id="menuModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden items-center justify-center p-4 z-50" onclick="hideMenuModal(event)">
+        <div class="bg-white rounded-xl max-w-3xl w-full max-h-full overflow-hidden flex flex-col" onclick="event.stopPropagation()">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h3 id="menuModalTitle" class="text-xl font-semibold text-gray-800">Meni za Nedelju</h3>
+                <button onclick="hideMenuModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-light leading-none">
+                    &times;
+                </button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-grow text-center">
+                <!-- Meni Slika/Link će se ovde prikazati -->
+                <img id="menuImage" class="max-w-full h-auto rounded-lg shadow-md mx-auto" alt="Dnevni Meni" onerror="document.getElementById('menuImageError').classList.remove('hidden'); this.classList.add('hidden'); document.getElementById('menuSpinner').classList.add('hidden');">
+                <p id="menuImageError" class="text-red-500 mt-4 hidden">Greška pri učitavanju slike menija. Proverite da li je URL ispravan i dostupan.</p>
+                <div id="menuSpinner" class="hidden flex justify-center items-center h-40">
+                    <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-gray-500">Učitavanje menija...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // =================================================================
+        // KONFIGURACIJA GOOGLE SHEETA
+        // =================================================================
+        // 1. ZAMENITE SA ID-JEM VAŠEG GOOGLE SHEETA (nalazi se u URL-u: .../d/VAŠ_ID/edit)
+        const SHEET_ID = '1uNprQwPbFhENRO9QTwOEL541YM9hekdlOF-M7sGfw4s'; // <<< OVDE UNESITE VAŠ ID >>>
+
+        // 2. Proverite da li su ovi nazivi sheet-ova ispravni u vašem Google Sheet dokumentu
+        const SHEET_NAMES = {
+            order: 'OrderLinks', // Sheet 1: A1=Pon, A2=Uto, A3=Sre, A4=Čet, A5=Pet linkovi
+            menu: 'MenuLinks'    // Sheet 2: A1=Trenutni meni (slika URL), A2=Naredni meni (slika URL)
+        };
+        // =================================================================
+
+        let orderLinks = {}; // Globalna varijabla za linkove za naručivanje
+        let menuLinks = {};  // Globalna varijabla za linkove menija
+
+        const serbianDayNames = {
+            'ponedeljak': 'Ponedeljak',
+            'utorak': 'Utorak',
+            'sreda': 'Sredu',
+            'četvrtak': 'Četvrtak',
+            'petak': 'Petak',
+            'subota': 'Subotu', 
+            'nedelja': 'Nedelju' 
+        };
+        
+        const dayKeyMap = ['nedelja', 'ponedeljak', 'utorak', 'sreda', 'četvrtak', 'petak', 'subota'];
+
+        /**
+         * Pomoćna funkcija za parsiranje Google Visualization API odgovora.
+         * Ova verzija je robusnija: izoluje JSON string traženjem prvog '{' i poslednjeg '}'.
+         */
+        const parseGvizData = (rawText) => {
+            try {
+                // Pronađi prvi otvoreni {
+                const jsonStart = rawText.indexOf('{');
+                // Pronađi poslednji zatvoreni }
+                const jsonEnd = rawText.lastIndexOf('}');
+                
+                if (jsonStart === -1 || jsonEnd === -1) {
+                    throw new Error("JSON objekat nije pronađen unutar odgovora.");
+                }
+
+                // Izoluj samo JSON string
+                const jsonString = rawText.substring(jsonStart, jsonEnd + 1);
+                
+                return JSON.parse(jsonString);
+            } catch (e) {
+                console.error("Neuspešno parsiranje Gviz odgovora:", e);
+                return null;
+            }
+        };
+
+        /**
+         * Asinhrono preuzima podatke sa Google Sheeta.
+         */
+        async function fetchGoogleSheetData() {
+            const loader = document.getElementById('mainLoader');
+            const mainContent = document.getElementById('mainContent');
+            const fetchError = document.getElementById('fetchError');
+
+            loader.classList.remove('hidden');
+            mainContent.classList.add('hidden');
+            fetchError.classList.add('hidden');
+
+            // URL-ovi za Google Visualization API
+            // tq=select A limit X ograničava broj redova na koloni A
+            const orderURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAMES.order}&tq=select A limit 5`;
+            const menuURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAMES.menu}&tq=select A limit 2`;
+
+            try {
+                const [orderResponse, menuResponse] = await Promise.all([
+                    fetch(orderURL),
+                    fetch(menuURL)
+                ]);
+
+                const orderData = await orderResponse.text();
+                const menuData = await menuResponse.text();
+                
+                const parsedOrder = parseGvizData(orderData);
+                const parsedMenu = parseGvizData(menuData);
+                
+                if (!parsedOrder || !parsedMenu || parsedOrder.status === 'error' || parsedMenu.status === 'error') {
+                     throw new Error("Gviz API vratio grešku ili nevažeći format.");
+                }
+
+                // 1. Parsiranje linkova za naručivanje (Sheet 1: OrderLinks)
+                const orderRows = parsedOrder.table.rows;
+                const dayKeys = ['ponedeljak', 'utorak', 'sreda', 'četvrtak', 'petak'];
+                
+                orderLinks = orderRows.reduce((acc, row, index) => {
+                    // row.c[0].v sadrži vrednost ćelije (URL)
+                    if (row.c && row.c[0] && row.c[0].v) {
+                        acc[dayKeys[index]] = row.c[0].v;
+                    }
+                    return acc;
+                }, {});
+
+                // 2. Parsiranje linkova za meni (Sheet 2: MenuLinks)
+                const menuRows = parsedMenu.table.rows;
+                // A1 - Trenutni meni
+                if (menuRows[0] && menuRows[0].c[0] && menuRows[0].c[0].v) {
+                    menuLinks.currentWeek = menuRows[0].c[0].v;
+                }
+                // A2 - Naredni meni
+                if (menuRows[1] && menuRows[1].c[0] && menuRows[1].c[0].v) {
+                    menuLinks.nextWeek = menuRows[1].c[0].v;
+                }
+
+                console.log("Učitani linkovi za naručivanje:", orderLinks);
+                console.log("Učitani linkovi za meni:", menuLinks);
+
+            } catch (error) {
+                console.error("Greška pri učitavanju podataka sa Google Sheeta:", error);
+                fetchError.classList.remove('hidden');
+                // Ako dođe do greške, linkovi ostaju prazni {}
+                orderLinks = {}; 
+                menuLinks = {};
+                return; // Prekidamo dalje izvršavanje
+            } finally {
+                loader.classList.add('hidden');
+                mainContent.classList.remove('hidden'); // Prikazujemo glavni sadržaj bez obzira na grešku (da bi se videla poruka o grešci)
+            }
+        }
+        
+        /**
+         * Logika za određivanje ciljanog dana za naručivanje na osnovu trenutnog vremena.
+         */
+        function getTargetOrderDay() {
+            const now = new Date();
+            const currentDayIndex = now.getDay(); // 0 (Ned) do 6 (Sub)
+            const currentHour = now.getHours(); 
+
+            let targetDate = new Date(now);
+            let dayKey = ''; // Ključ za dohvat linka (ponedeljak, utorak...)
+            let displayDay = ''; // Ime dana za prikaz na dugmetu
+
+            // 1. Trenutni dan je Vikend (Subota/Nedelja) ILI Petak posle 13:00h
+            if (currentDayIndex === 0 || currentDayIndex === 6 || (currentDayIndex === 5 && currentHour >= 13)) {
+                // Cilj je sledeći Ponedeljak
+                let daysUntilMonday = (currentDayIndex === 0) ? 1 : // Ned -> Ponedeljak (1 dan)
+                                      (currentDayIndex === 6) ? 2 : // Sub -> Ponedeljak (2 dana)
+                                      3; // Petak posle 13h -> Ponedeljak (3 dana)
+                
+                targetDate.setDate(targetDate.getDate() + daysUntilMonday);
+                dayKey = 'ponedeljak';
+                displayDay = serbianDayNames['ponedeljak'];
+            }
+            // 2. Radni dan (Mon-Thu) Posle 13:00h
+            else if (currentDayIndex >= 1 && currentDayIndex <= 4 && currentHour >= 13) {
+                // Cilj je SUTRA
+                targetDate.setDate(targetDate.getDate() + 1);
+                dayKey = dayKeyMap[targetDate.getDay()];
+                displayDay = serbianDayNames[dayKey];
+            }
+            // 3. Radni dan (Mon-Fri) Pre 13:00h
+            else if (currentDayIndex >= 1 && currentDayIndex <= 5 && currentHour < 13) {
+                // Cilj je DANAS
+                dayKey = dayKeyMap[currentDayIndex];
+                displayDay = serbianDayNames[dayKey];
+            }
+            // Fallback (ako je subota pre 13h, i dalje ide na ponedeljak)
+            else {
+                 if (currentDayIndex === 6 || currentDayIndex === 5) {
+                    let daysUntilMonday = (currentDayIndex === 6) ? 2 : 3;
+                    targetDate.setDate(targetDate.getDate() + daysUntilMonday);
+                    dayKey = 'ponedeljak';
+                    displayDay = serbianDayNames['ponedeljak'];
+                 } else {
+                     dayKey = dayKeyMap[currentDayIndex];
+                     displayDay = serbianDayNames[dayKey];
+                 }
+            }
+            
+            // Formatiranje datuma za prikaz (npr. 28. Sept.)
+            const dayOfMonth = targetDate.getDate();
+            const monthNames = ['Jan.', 'Feb.', 'Mar.', 'Apr.', 'Maj', 'Jun', 'Jul', 'Avg.', 'Sep.', 'Okt.', 'Nov.', 'Dec.'];
+            const month = monthNames[targetDate.getMonth()];
+            const formattedDate = `${dayOfMonth}. ${month}`;
+
+            return {
+                key: dayKey,        
+                display: displayDay, 
+                date: formattedDate  
+            };
+        }
+
+        /**
+         * Inicijalizuje aplikaciju, postavlja tekst dugmeta i link nakon učitavanja podataka.
+         */
+        function initializeApp() {
+            const orderButton = document.getElementById('orderButton');
+            const targetDayInfo = getTargetOrderDay();
+            
+            // Koristimo učitani globalni orderLinks
+            const targetLink = orderLinks[targetDayInfo.key];
+
+            if (targetLink) {
+                // Postavljanje teksta dugmeta i linka
+                orderButton.textContent = `NARUČI ZA ${targetDayInfo.display} (${targetDayInfo.date})`;
+                orderButton.dataset.link = targetLink;
+                orderButton.disabled = false;
+                orderButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                orderButton.classList.add('bg-amber-500', 'hover:bg-amber-600');
+            } else {
+                // Ako link nije nađen (npr. vikend ili greška u podacima)
+                orderButton.textContent = "Naručivanje trenutno nije dostupno.";
+                orderButton.disabled = true;
+                orderButton.dataset.link = '#';
+                orderButton.classList.remove('bg-amber-500', 'hover:bg-amber-600');
+                orderButton.classList.add('bg-gray-400', 'cursor-not-allowed');
+            }
+
+            // Ažuriranje teksta o roku naručivanja
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentDayIndex = now.getDay();
+            const deadlineText = document.getElementById('orderDeadline');
+
+            if (currentDayIndex >= 1 && currentDayIndex <= 5 && currentHour < 13) {
+                 deadlineText.textContent = "Rok za naručivanje za danas ističe u 13:00 h.";
+            } else if (currentDayIndex >= 1 && currentDayIndex <= 4 && currentHour >= 13) {
+                 deadlineText.textContent = `Naručujete za sutra. Rok je do 13:00 h sutra.`;
+            } else {
+                 deadlineText.textContent = `Naručujete za Ponedeljak.`;
+            }
+
+            console.log(`Ciljani dan: ${targetDayInfo.key} (${targetDayInfo.date}), Link: ${targetLink}`);
+        }
+
+        /**
+         * Prikazuje modal i učitava odgovarajući link menija.
+         */
+        function showMenuModal() {
+            const modal = document.getElementById('menuModal');
+            const menuImage = document.getElementById('menuImage');
+            const menuTitle = document.getElementById('menuModalTitle');
+            const menuSpinner = document.getElementById('menuSpinner');
+            const menuImageError = document.getElementById('menuImageError');
+            
+            // Prikaz modalnog prozora
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            menuImageError.classList.add('hidden');
+            menuImage.classList.add('hidden');
+            menuSpinner.classList.remove('hidden');
+            menuSpinner.classList.add('flex');
+
+            // Logika za odabir menija:
+            const now = new Date();
+            const currentDayIndex = now.getDay(); 
+            
+            let menuLink = menuLinks.currentWeek;
+            let titleText = "Meni za Trenutnu Nedelju";
+
+            // Ako je Petak (5), Subota (6) ili Nedelja (0), prikaži meni za narednu nedelju
+            if (currentDayIndex >= 5 || currentDayIndex === 0) {
+                menuLink = menuLinks.nextWeek;
+                titleText = "Meni za Narednu Nedelju";
+            }
+            
+            menuTitle.textContent = titleText;
+
+            if (menuLink) {
+                 // Simulacija učitavanja slike
+                const img = new Image();
+                img.onload = () => {
+                    menuImage.src = menuLink;
+                    menuImage.classList.remove('hidden');
+                    menuSpinner.classList.add('hidden');
+                    menuSpinner.classList.remove('flex');
+                };
+                img.onerror = () => {
+                    menuImageError.classList.remove('hidden');
+                    menuSpinner.classList.add('hidden');
+                    menuSpinner.classList.remove('flex');
+                };
+                img.src = menuLink; // Pokreće učitavanje
+            } else {
+                menuImageError.textContent = "Link menija nije pronađen u Google Sheetu.";
+                menuImageError.classList.remove('hidden');
+                menuSpinner.classList.add('hidden');
+                menuSpinner.classList.remove('flex');
+            }
+        }
+
+        /**
+         * Skriva modalni prozor.
+         */
+        function hideMenuModal(event) {
+            // Skriva samo ako se klikne na pozadinu ili X dugme
+            if (event === undefined || event.target.id === 'menuModal' || event.target.tagName === 'BUTTON' && event.target.textContent.includes('×')) {
+                const modal = document.getElementById('menuModal');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        // Inicijalizacija aplikacije pri učitavanju stranice
+        window.onload = async () => {
+            // Prvo učitavamo podatke, pa onda inicijalizujemo UI
+            await fetchGoogleSheetData();
+            initializeApp();
+        };
+    </script>
+</body>
+</html>
