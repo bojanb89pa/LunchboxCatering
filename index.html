@@ -109,8 +109,8 @@
 
         // 2. Proverite da li su ovi nazivi sheet-ova ispravni u vašem Google Sheet dokumentu
         const SHEET_NAMES = {
-            order: 'OrderLinks', // Sheet 1: A1=Pon, A2=Uto, A3=Sre, A4=Čet, A5=Pet linkovi
-            menu: 'MenuLinks'    // Sheet 2: A1=Trenutni meni (slika URL), A2=Naredni meni (slika URL)
+            order: 'OrderLinks', // Sheet 1: B1=Pon, B2=Uto, B3=Sre, B4=Čet, B5=Pet linkovi
+            menu: 'MenuLinks'    // Sheet 2: B1=Trenutni meni (slika URL), B2=Naredni meni (slika URL)
         };
         // =================================================================
 
@@ -167,9 +167,9 @@
             fetchError.classList.add('hidden');
 
             // URL-ovi za Google Visualization API
-            // tq=select A limit X ograničava broj redova na koloni A
-            const orderURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAMES.order}&tq=select A limit 5`;
-            const menuURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAMES.menu}&tq=select A limit 2`;
+            // tq=select B limit X ograničava broj redova na koloni B
+            const orderURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAMES.order}&tq=select B limit 5`;
+            const menuURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAMES.menu}&tq=select B limit 2`;
 
             try {
                 const [orderResponse, menuResponse] = await Promise.all([
@@ -201,11 +201,11 @@
 
                 // 2. Parsiranje linkova za meni (Sheet 2: MenuLinks)
                 const menuRows = parsedMenu.table.rows;
-                // A1 - Trenutni meni
+                // B1 - Trenutni meni
                 if (menuRows[0] && menuRows[0].c[0] && menuRows[0].c[0].v) {
                     menuLinks.currentWeek = menuRows[0].c[0].v;
                 }
-                // A2 - Naredni meni
+                // B2 - Naredni meni
                 if (menuRows[1] && menuRows[1].c[0] && menuRows[1].c[0].v) {
                     menuLinks.nextWeek = menuRows[1].c[0].v;
                 }
