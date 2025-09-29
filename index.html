@@ -321,9 +321,9 @@
             const deadlineText = document.getElementById('orderDeadline');
 
             if (currentDayIndex >= 1 && currentDayIndex <= 5 && currentHour < 13) {
-                 deadlineText.textContent = "Rok za naručivanje za danas ističe u 13:00 h.";
+                 deadlineText.textContent = "Rok za naručivanje za danas ističe u 10:00 h.";
             } else if (currentDayIndex >= 1 && currentDayIndex <= 4 && currentHour >= 13) {
-                 deadlineText.textContent = `Naručujete za sutra. Rok je do 13:00 h sutra.`;
+                 deadlineText.textContent = `Naručujete za sutra. Rok je do 10:00 h sutra.`;
             } else {
                  deadlineText.textContent = `Naručujete za Ponedeljak.`;
             }
