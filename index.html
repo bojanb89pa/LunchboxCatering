@@ -63,7 +63,7 @@
                     onclick="window.location.href = document.getElementById('orderButton').dataset.link;">
                 NARUČI ZA DANAS
             </button>
-            <p id="orderDeadline" class="text-xs text-gray-500 mt-2">Dostupno za naručivanje do 13:00 h.</p>
+            <p id="orderDeadline" class="text-xs text-gray-500 mt-2">Dostupno za naručivanje do 10:00.</p>
         </div>
 
         <!-- Meni Sekcija -->
@@ -275,9 +275,9 @@
                  }
             }
             
-            // Formatiranje datuma za prikaz (npr. 28. Sept.)
+            // Formatiranje datuma za prikaz (npr. 28. SEPT.)
             const dayOfMonth = targetDate.getDate();
-            const monthNames = ['Jan.', 'Feb.', 'Mar.', 'Apr.', 'Maj', 'Jun', 'Jul', 'Avg.', 'Sep.', 'Okt.', 'Nov.', 'Dec.'];
+            const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAJ', 'JUN', 'JUL', 'AVG', 'SEPT', 'OKT', 'NOV', 'DEC'];
             const month = monthNames[targetDate.getMonth()];
             const formattedDate = `${dayOfMonth}. ${month}`;
 
@@ -321,9 +321,9 @@
             const deadlineText = document.getElementById('orderDeadline');
 
             if (currentDayIndex >= 1 && currentDayIndex <= 5 && currentHour < 13) {
-                 deadlineText.textContent = "Rok za naručivanje za danas ističe u 10:00 h.";
+                 deadlineText.textContent = "Rok za naručivanje za danas ističe u 10:00.";
             } else if (currentDayIndex >= 1 && currentDayIndex <= 4 && currentHour >= 13) {
-                 deadlineText.textContent = `Naručujete za sutra. Rok je do 10:00 h sutra.`;
+                 deadlineText.textContent = `Naručujete za sutra. Rok je do 10:00 sutra.`;
             } else {
                  deadlineText.textContent = `Naručujete za Ponedeljak.`;
             }
